@@ -154,7 +154,10 @@ void OpticalFlow::update(void)
     if (!enabled()) {
         return;
     }
-
+    if (backend == nullptr && (OpticalFlowType)_type.get() == OpticalFlowType::UAVCAN) {
+        //keep looking until found
+        backend = AP_OpticalFlow_UAVCAN::detect(*this);
+    }
     if (backend != nullptr) {
         backend->update();
     }
