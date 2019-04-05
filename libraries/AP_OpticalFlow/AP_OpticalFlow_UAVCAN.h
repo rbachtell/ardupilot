@@ -1,6 +1,7 @@
 #pragma once
-
 #include "OpticalFlow_backend.h"
+
+#if HAL_WITH_UAVCAN
 
 #include <AP_UAVCAN/AP_UAVCAN.h>
 
@@ -34,3 +35,4 @@ private:
     void _push_state(void);
 
 };
+#endif //HAL_WITH_UAVCAN
