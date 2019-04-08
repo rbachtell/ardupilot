@@ -37,6 +37,7 @@
 #include "AP_RangeFinder_Benewake.h"
 #include "AP_RangeFinder_PWM.h"
 #include "AP_RangeFinder_BLPing.h"
+#include "AP_RangeFinder_UAVCAN.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
@@ -498,6 +499,8 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
             drivers[instance] = new AP_RangeFinder_BLPing(state[instance], params[instance], serial_manager, serial_instance++);
         }
         break;
+    case RangeFinder_TYPE_UAVCAN:
+        drivers[instance] = AP_RangeFinder_UAVCAN::detect(state[instance], params[instance]);
     default:
         break;
     }
