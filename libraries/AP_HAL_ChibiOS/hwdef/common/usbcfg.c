@@ -34,7 +34,7 @@
 
 // #pragma GCC optimize("O0")
 
-#ifdef HAL_USB_PRODUCT_ID
+#if defined(HAL_USB_PRODUCT_ID) && !defined(HAVE_DUAL_CDC)
 
 /* Virtual serial port over USB.*/
 SerialUSBDriver SDU1;
@@ -416,7 +416,7 @@ const USBConfig usbcfg = {
 /*
  * Serial over USB driver configuration.
  */
-const SerialUSBConfig serusbcfg = {
+const SerialUSBConfig serusbcfg1 = {
   &USBD1,
   USBD1_DATA_REQUEST_EP,
   USBD1_DATA_AVAILABLE_EP,

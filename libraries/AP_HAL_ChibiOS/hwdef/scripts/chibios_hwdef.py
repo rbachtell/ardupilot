@@ -814,7 +814,15 @@ def write_UART_config(f):
             rts_line = 'PAL_LINE(GPIO%s,%uU)' % (p.port, p.pin)
         else:
             rts_line = "0"
-        if dev.startswith('OTG'):
+        if dev.startswith('OTG1'):
+            f.write(
+                '#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU1, true, false, 0, 0, false, 0, 0}\n'
+                % dev)
+        elif dev.startswith('OTG2'):
+            f.write(
+                '#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU2, true, false, 0, 0, false, 0, 0}\n'
+                % dev)
+        elif dev.startswith('OTG'):
             f.write(
                 '#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU1, true, false, 0, 0, false, 0, 0}\n'
                 % dev)
@@ -848,7 +856,11 @@ def write_UART_config_bootloader(f):
     devlist = []
     have_uart = False
     for u in uart_list:
-        if u.startswith('OTG'):
+        if u.startswith('OTG1'):
+            devlist.append('(BaseChannel *)&SDU1')
+        elif u.startswith('OTG2'):
+            devlist.append('(BaseChannel *)&SDU2')
+        elif u.startswith('OTG'):
             devlist.append('(BaseChannel *)&SDU1')
         else:
             unum = int(u[-1])

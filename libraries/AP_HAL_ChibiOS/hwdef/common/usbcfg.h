@@ -27,15 +27,19 @@
  * Modified for use in AP_HAL by Andrew Tridgell and Siddharth Bharat Purohit
  */
 #pragma once
-
+#include "hwdef.h"
 #if defined(__cplusplus)
 extern "C" {
 #endif
 
 #if HAL_USE_SERIAL_USB
 extern const USBConfig usbcfg;
-extern SerialUSBConfig serusbcfg;
+extern SerialUSBConfig serusbcfg1;
 extern SerialUSBDriver SDU1;
+#ifdef HAVE_DUAL_CDC
+extern SerialUSBDriver SDU2;
+extern SerialUSBConfig serusbcfg2;
+#endif //HAVE_DUAL_CDC
 #endif
 
 void setup_usb_strings(void);
