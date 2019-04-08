@@ -2,6 +2,7 @@
 
 #include "RangeFinder_Backend.h"
 
+#if HAL_WITH_UAVCAN
 #include <AP_UAVCAN/AP_UAVCAN.h>
 #include <AP_Common/Semaphore.h>
 
@@ -43,3 +44,4 @@ private:
 
     static HAL_Semaphore _sem_registry;
 };
+#endif //HAL_WITH_UAVCAN
