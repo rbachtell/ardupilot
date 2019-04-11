@@ -12,7 +12,7 @@ class AP_RangeFinder_UAVCAN : public AP_RangeFinder_Backend {
 public:
     AP_RangeFinder_UAVCAN(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params);
 
-    void update() override {}
+    void update() override;
 
     static void subscribe_msgs(AP_UAVCAN* ap_uavcan);
     static AP_RangeFinder_UAVCAN* get_uavcan_backend(AP_UAVCAN* ap_uavcan, uint8_t node_id, bool create_new);
@@ -29,9 +29,10 @@ private:
     static void give_registry();
 
     uint8_t _instance;
-
-    HAL_Semaphore _sem_range;
-
+    RangeFinder::RangeFinder_Status _status;
+    uint16_t _distance_cm;
+    uint16_t _last_reading_ms;
+    bool _new_data;
     AP_UAVCAN* _ap_uavcan;
     uint8_t _node_id;
 

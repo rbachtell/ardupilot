@@ -23,7 +23,8 @@ HAL_Semaphore AP_RangeFinder_UAVCAN::_sem_registry;
   constructor - registers instance at top RangeFinder driver
  */
 AP_RangeFinder_UAVCAN::AP_RangeFinder_UAVCAN(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
-    AP_RangeFinder_Backend(_state, _params)
+    AP_RangeFinder_Backend(_state, _params),
+    _new_data(false)
 {}
 
 void AP_RangeFinder_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
@@ -124,6 +125,19 @@ AP_RangeFinder_UAVCAN* AP_RangeFinder_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_u
     return nullptr;
 }
 
+void AP_RangeFinder_UAVCAN::update()
+{
+    WITH_SEMAPHORE(_sem);
+    if (_new_data) {
+        state.distance_cm = _distance_cm;
+        state.last_reading_ms = _last_reading_ms;
+        update_status();
+        _new_data = false;
+    } else {
+        set_status(_status);
+    }
+}
+
 void AP_RangeFinder_UAVCAN::handle_measurement(AP_UAVCAN* ap_uavcan, uint8_t node_id, const MeasurementCb &cb)
 {
     if (take_registry()) {
@@ -133,33 +147,33 @@ void AP_RangeFinder_UAVCAN::handle_measurement(AP_UAVCAN* ap_uavcan, uint8_t nod
             return;
         }
         {
-            WITH_SEMAPHORE(driver->_sem_range);
+            WITH_SEMAPHORE(driver->_sem);
             switch (cb.msg->reading_type) {
                 case uavcan::equipment::range_sensor::Measurement::READING_TYPE_VALID_RANGE:
                 {
-                    driver->state.distance_cm = cb.msg->range*100.0f;
-                    driver->state.last_reading_ms = AP_HAL::millis();
-                    driver->update_status();
+                    driver->_distance_cm = cb.msg->range*100.0f;
+                    driver->_last_reading_ms = AP_HAL::millis();
+                    driver->_new_data = true;
                     break;
                 }
                 case uavcan::equipment::range_sensor::Measurement::READING_TYPE_TOO_CLOSE:
                 {
-                    driver->set_status(RangeFinder::RangeFinder_OutOfRangeLow);
+                    driver->_status = RangeFinder::RangeFinder_OutOfRangeLow;
                     break;
                 }
                 case uavcan::equipment::range_sensor::Measurement::READING_TYPE_TOO_FAR:
                 {
-                    driver->set_status(RangeFinder::RangeFinder_OutOfRangeHigh);
+                    driver->_status = RangeFinder::RangeFinder_OutOfRangeHigh;
                     break;
                 }
                 case uavcan::equipment::range_sensor::Measurement::READING_TYPE_UNDEFINED:
                 {
-                    driver->set_status(RangeFinder::RangeFinder_NoData);
+                    driver->_status = RangeFinder::RangeFinder_NoData;
                     break;
                 }
                 default:
                 {
-                    driver->set_status(RangeFinder::RangeFinder_NoData);
+                    driver->_status = RangeFinder::RangeFinder_NoData;
                     break;
                 }
             }
