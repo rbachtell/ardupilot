@@ -1,4 +1,4 @@
-float32 integration_interval
-float32[2] rate_gyro_integral
-float32[2] flow_integral
+float32 integration_interval    # radians
+float32[2] rate_gyro_integral   # radians
+float32[2] flow_integral        # seconds
 uint8 quality
