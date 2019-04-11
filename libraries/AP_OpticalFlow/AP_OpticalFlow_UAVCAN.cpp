@@ -75,21 +75,25 @@ void AP_OpticalFlow_UAVCAN::handle_measurement(AP_UAVCAN* ap_uavcan, uint8_t nod
         _node_id = node_id;
         return;
     }
-    _driver->flowRate = Vector2f(cb.msg->flow_integral[0], cb.msg->flow_integral[1]);
-    _driver->bodyRate = Vector2f(cb.msg->rate_gyro_integral[0], cb.msg->rate_gyro_integral[1]);
-    _driver->integral_time = cb.msg->integration_interval;
-    _driver->surface_quality = cb.msg->quality;
-    _driver->_push_state();
+    {
+        WITH_SEMAPHORE(_driver->_sem);
+        _driver->flowRate = Vector2f(cb.msg->flow_integral[0], cb.msg->flow_integral[1]);
+        _driver->bodyRate = Vector2f(cb.msg->rate_gyro_integral[0], cb.msg->rate_gyro_integral[1]);
+        _driver->integral_time = cb.msg->integration_interval;
+        _driver->surface_quality = cb.msg->quality;
+    }
 }
 
 void AP_OpticalFlow_UAVCAN::update()
-{}
+{
+    _push_state();
+}
 
 // Read the sensor
 void AP_OpticalFlow_UAVCAN::_push_state(void)
 {
     struct OpticalFlow::OpticalFlow_state state;
-    WITH_SEMAPHORE(_sem_flow);
+    WITH_SEMAPHORE(_sem);
     const Vector2f flowScaler = _flowScaler();
 
     float flowScaleFactorX = 1.0f + 0.001f * flowScaler.x;

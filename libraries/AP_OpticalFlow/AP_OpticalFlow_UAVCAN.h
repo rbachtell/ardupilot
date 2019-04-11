@@ -26,7 +26,6 @@ private:
     Vector2f flowRate, bodyRate;
     uint8_t surface_quality;
     float integral_time;
-    HAL_Semaphore _sem_flow;
 
     static uint8_t _node_id;
 
