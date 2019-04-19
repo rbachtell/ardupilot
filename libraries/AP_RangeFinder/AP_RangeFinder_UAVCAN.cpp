@@ -85,11 +85,13 @@ AP_RangeFinder_UAVCAN* AP_RangeFinder_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_u
 void AP_RangeFinder_UAVCAN::update()
 {
     WITH_SEMAPHORE(_sem);
-    if (_new_data) {
+    if ((AP_HAL::millis() - _last_reading_ms) > 200) {
+        set_status(RangeFinder::RangeFinder_NoData);
+        state.distance_cm = 0;
+    } else if (_status == RangeFinder::RangeFinder_Good) {
         state.distance_cm = _distance_cm;
         state.last_reading_ms = _last_reading_ms;
         update_status();
-        _new_data = false;
     } else {
         set_status(_status);
     }
