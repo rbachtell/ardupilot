@@ -324,18 +324,7 @@ void RangeFinder::init(enum Rotation orientation_default)
   around 10Hz by main loop
  */
 void RangeFinder::update(void)
-{    
-#if HAL_WITH_UAVCAN
-    if (num_instances < RANGEFINDER_MAX_INSTANCES) {
-        if (drivers[num_instances] == nullptr && params[num_instances].type == RangeFinder_TYPE_UAVCAN) {
-            //keep looking until found
-            drivers[num_instances] = AP_RangeFinder_UAVCAN::detect(state[num_instances], params[num_instances]);
-            if (drivers[num_instances] != nullptr) {
-                num_instances++;
-            }
-        }
-    }
-#endif
+{
     for (uint8_t i=0; i<num_instances; i++) {
         if (drivers[i] != nullptr) {
             if (params[i].type == RangeFinder_TYPE_NONE) {
@@ -510,11 +499,6 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
             drivers[instance] = new AP_RangeFinder_BLPing(state[instance], params[instance], serial_manager, serial_instance++);
         }
         break;
-#if HAL_WITH_UAVCAN
-    case RangeFinder_TYPE_UAVCAN:
-        drivers[instance] = AP_RangeFinder_UAVCAN::detect(state[instance], params[instance]);
-        break;
-#endif
     default:
         break;
     }

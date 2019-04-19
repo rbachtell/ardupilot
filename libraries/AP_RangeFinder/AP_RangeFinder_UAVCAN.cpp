@@ -16,9 +16,6 @@ extern const AP_HAL::HAL& hal;
 //UAVCAN Frontend Registry Binder
 UC_REGISTRY_BINDER(MeasurementCb, uavcan::equipment::range_sensor::Measurement);
 
-AP_RangeFinder_UAVCAN::DetectedModules AP_RangeFinder_UAVCAN::_detected_modules[] = {0};
-HAL_Semaphore AP_RangeFinder_UAVCAN::_sem_registry;
-
 /*
   constructor - registers instance at top RangeFinder driver
  */
@@ -45,84 +42,40 @@ void AP_RangeFinder_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
     }
 }
 
-bool AP_RangeFinder_UAVCAN::take_registry()
-{
-    return _sem_registry.take(HAL_SEMAPHORE_BLOCK_FOREVER);
-}
-
-void AP_RangeFinder_UAVCAN::give_registry()
-{
-    _sem_registry.give();
-}
-
-AP_RangeFinder_Backend* AP_RangeFinder_UAVCAN::detect(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params)
-{
-    if (!take_registry()) {
-        return nullptr;
-    }
-    AP_RangeFinder_UAVCAN* backend = nullptr;
-    for (uint8_t i = 0; i < RANGEFINDER_MAX_INSTANCES; i++) {
-        if (_detected_modules[i].driver == nullptr && _detected_modules[i].ap_uavcan != nullptr) {
-            backend = new AP_RangeFinder_UAVCAN(_state, _params);
-            if (backend == nullptr) {
-                debug_range_finder_uavcan(0,
-                                  _detected_modules[i].ap_uavcan->get_driver_index(),
-                                  "Failed register UAVCAN RangeFinder Node %d on Bus %d\n",
-                                  _detected_modules[i].node_id,
-                                  _detected_modules[i].ap_uavcan->get_driver_index());
-            } else {
-                _detected_modules[i].driver = backend;
-                backend->_ap_uavcan = _detected_modules[i].ap_uavcan;
-                backend->_node_id = _detected_modules[i].node_id;
-                backend->set_status(RangeFinder::RangeFinder_NoData);
-                debug_range_finder_uavcan(0,
-                                  _detected_modules[i].ap_uavcan->get_driver_index(),
-                                  "Registered UAVCAN RangeFinder Node %d on Bus %d\n",
-                                  _detected_modules[i].node_id,
-                                  _detected_modules[i].ap_uavcan->get_driver_index());
-            }
-            break;
-        }
-    }
-    give_registry();
-    return backend;
-}
-
-AP_RangeFinder_UAVCAN* AP_RangeFinder_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_uavcan, uint8_t node_id, bool create_new)
+AP_RangeFinder_UAVCAN* AP_RangeFinder_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_uavcan, uint8_t node_id, uint8_t address, bool create_new)
 {
     if (ap_uavcan == nullptr) {
         return nullptr;
     }
+    AP_RangeFinder_UAVCAN* driver = nullptr;
     for (uint8_t i = 0; i < RANGEFINDER_MAX_INSTANCES; i++) {
-        if (_detected_modules[i].driver != nullptr &&
-            _detected_modules[i].ap_uavcan == ap_uavcan && 
-            _detected_modules[i].node_id == node_id) {
-            return _detected_modules[i].driver;
+        if (AP::rangefinder()->params[i].type == RangeFinder::RangeFinder_TYPE_UAVCAN &&
+            AP::rangefinder()->params[i].address == address) {
+            driver = (AP_RangeFinder_UAVCAN*)AP::rangefinder()->drivers[i];
+        }
+        if (driver != nullptr &&
+            driver->ap_uavcan == ap_uavcan && 
+            driver->node_id == node_id) {
+            return driver;
         }
     }
     
     if (create_new) {
-        bool already_detected = false;
-        //Check if there's an empty spot for possible registeration
         for (uint8_t i = 0; i < RANGEFINDER_MAX_INSTANCES; i++) {
-            if (_detected_modules[i].ap_uavcan == ap_uavcan && _detected_modules[i].node_id == node_id) {
-                //Already Detected
-                already_detected = true;
-                break;
+            if (AP::rangefinder()->params[i].type == RangeFinder::RangeFinder_TYPE_UAVCAN &&
+                AP::rangefinder()->params[i].address == address) {
+                AP::rangefinder()->drivers[i] = new AP_RangeFinder_UAVCAN(AP::rangefinder()->state[i], AP::rangefinder()->params[i]);
+                driver = (AP_RangeFinder_UAVCAN*)AP::rangefinder()->drivers[i];
             }
-        }
-        if (!already_detected) {
-            for (uint8_t i = 0; i < RANGEFINDER_MAX_INSTANCES; i++) {
-                if (_detected_modules[i].ap_uavcan == nullptr) {
-                    _detected_modules[i].ap_uavcan = ap_uavcan;
-                    _detected_modules[i].node_id = node_id;
-                    break;
-                }
+            if (driver->ap_uavcan == nullptr) {
+                driver->ap_uavcan = ap_uavcan;
+                driver->node_id = node_id;
+                break;
             }
         }
     }
 
-    return nullptr;
+    return driver;
 }
 
 void AP_RangeFinder_UAVCAN::update()
@@ -140,45 +93,42 @@ void AP_RangeFinder_UAVCAN::update()
 
 void AP_RangeFinder_UAVCAN::handle_measurement(AP_UAVCAN* ap_uavcan, uint8_t node_id, const MeasurementCb &cb)
 {
-    if (take_registry()) {
-        AP_RangeFinder_UAVCAN* driver = get_uavcan_backend(ap_uavcan, node_id, true);
-        if (driver == nullptr) {
-            give_registry();
-            return;
-        }
-        {
-            WITH_SEMAPHORE(driver->_sem);
-            switch (cb.msg->reading_type) {
-                case uavcan::equipment::range_sensor::Measurement::READING_TYPE_VALID_RANGE:
-                {
-                    driver->_distance_cm = cb.msg->range*100.0f;
-                    driver->_last_reading_ms = AP_HAL::millis();
-                    driver->_new_data = true;
-                    break;
-                }
-                case uavcan::equipment::range_sensor::Measurement::READING_TYPE_TOO_CLOSE:
-                {
-                    driver->_status = RangeFinder::RangeFinder_OutOfRangeLow;
-                    break;
-                }
-                case uavcan::equipment::range_sensor::Measurement::READING_TYPE_TOO_FAR:
-                {
-                    driver->_status = RangeFinder::RangeFinder_OutOfRangeHigh;
-                    break;
-                }
-                case uavcan::equipment::range_sensor::Measurement::READING_TYPE_UNDEFINED:
-                {
-                    driver->_status = RangeFinder::RangeFinder_NoData;
-                    break;
-                }
-                default:
-                {
-                    driver->_status = RangeFinder::RangeFinder_NoData;
-                    break;
-                }
+    AP_RangeFinder_UAVCAN* driver = get_uavcan_backend(ap_uavcan, node_id, cb.msg->sensor_id, true);
+    if (driver == nullptr) {
+        return;
+    }
+    {
+        WITH_SEMAPHORE(driver->_sem);
+        switch (cb.msg->reading_type) {
+            case uavcan::equipment::range_sensor::Measurement::READING_TYPE_VALID_RANGE:
+            {
+                driver->_distance_cm = cb.msg->range*100.0f;
+                driver->_last_reading_ms = AP_HAL::millis();
+                driver->_new_data = true;
+                driver->_status = RangeFinder::RangeFinder_Good;
+                break;
+            }
+            case uavcan::equipment::range_sensor::Measurement::READING_TYPE_TOO_CLOSE:
+            {
+                driver->_status = RangeFinder::RangeFinder_OutOfRangeLow;
+                break;
+            }
+            case uavcan::equipment::range_sensor::Measurement::READING_TYPE_TOO_FAR:
+            {
+                driver->_status = RangeFinder::RangeFinder_OutOfRangeHigh;
+                break;
+            }
+            case uavcan::equipment::range_sensor::Measurement::READING_TYPE_UNDEFINED:
+            {
+                driver->_status = RangeFinder::RangeFinder_NoData;
+                break;
+            }
+            default:
+            {
+                driver->_status = RangeFinder::RangeFinder_NoData;
+                break;
             }
         }
-        give_registry();
     }
 }
 

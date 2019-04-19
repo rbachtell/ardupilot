@@ -15,7 +15,7 @@ public:
     void update() override;
 
     static void subscribe_msgs(AP_UAVCAN* ap_uavcan);
-    static AP_RangeFinder_UAVCAN* get_uavcan_backend(AP_UAVCAN* ap_uavcan, uint8_t node_id, bool create_new);
+    static AP_RangeFinder_UAVCAN* get_uavcan_backend(AP_UAVCAN* ap_uavcan, uint8_t node_id, uint8_t address, bool create_new);
     static AP_RangeFinder_Backend* detect(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params);
 
     static void handle_measurement(AP_UAVCAN* ap_uavcan, uint8_t node_id, const MeasurementCb &cb);
@@ -37,11 +37,8 @@ private:
     uint8_t _node_id;
 
     // Module Detection Registry
-    static struct DetectedModules {
-        AP_UAVCAN* ap_uavcan;
-        uint8_t node_id;
-        AP_RangeFinder_UAVCAN* driver;
-    } _detected_modules[RANGEFINDER_MAX_INSTANCES];
+    AP_UAVCAN* ap_uavcan;
+    uint8_t node_id;
 
     static HAL_Semaphore _sem_registry;
 };
