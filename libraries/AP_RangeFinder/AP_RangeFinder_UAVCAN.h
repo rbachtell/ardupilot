@@ -22,24 +22,15 @@ public:
 
 protected:
     virtual MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
-        return MAV_DISTANCE_SENSOR_LASER;
+        return _sensor_type;
     }
 private:
-    static bool take_registry();
-    static void give_registry();
-
     uint8_t _instance;
     RangeFinder::RangeFinder_Status _status;
     uint16_t _distance_cm;
     uint16_t _last_reading_ms;
-    bool _new_data;
     AP_UAVCAN* _ap_uavcan;
     uint8_t _node_id;
-
-    // Module Detection Registry
-    AP_UAVCAN* ap_uavcan;
-    uint8_t node_id;
-
-    static HAL_Semaphore _sem_registry;
+    MAV_DISTANCE_SENSOR _sensor_type;
 };
 #endif //HAL_WITH_UAVCAN
