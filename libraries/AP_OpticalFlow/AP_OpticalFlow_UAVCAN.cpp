@@ -26,7 +26,12 @@ AP_UAVCAN* AP_OpticalFlow_UAVCAN::_ap_uavcan = nullptr;
  */
 AP_OpticalFlow_UAVCAN::AP_OpticalFlow_UAVCAN(OpticalFlow &flow) :
     OpticalFlow_backend(flow)
-{}
+{
+    if (_driver) {
+        AP_HAL::panic("Only one instance of Flow supported!");
+    }
+    _driver = this;
+}
 
 void AP_OpticalFlow_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
 {
@@ -46,28 +51,6 @@ void AP_OpticalFlow_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
     }
 }
 
-AP_OpticalFlow_UAVCAN* AP_OpticalFlow_UAVCAN::detect(OpticalFlow &flow)
-{
-    if (_ap_uavcan == nullptr) {
-        return nullptr;
-    }
-    if (_driver == nullptr) {
-        _driver = new AP_OpticalFlow_UAVCAN(flow);
-        if (_driver == nullptr) {
-            hal.console->printf (
-                                "Failed register UAVCAN Flow Node %d on Bus %d\n",
-                                _node_id,
-                                _ap_uavcan->get_driver_index());
-        } else {
-            hal.console->printf (
-                                "Registered UAVCAN Flow Node %d on Bus %d\n",
-                                _node_id,
-                                _ap_uavcan->get_driver_index());
-        }
-    }
-    return _driver;
-}
-
 void AP_OpticalFlow_UAVCAN::handle_measurement(AP_UAVCAN* ap_uavcan, uint8_t node_id, const MeasurementCb &cb)
 {
     if (_driver == nullptr) {
@@ -77,6 +60,7 @@ void AP_OpticalFlow_UAVCAN::handle_measurement(AP_UAVCAN* ap_uavcan, uint8_t nod
     }
     {
         WITH_SEMAPHORE(_driver->_sem);
+        _driver->new_data = true;
         _driver->flowRate = Vector2f(cb.msg->flow_integral[0], cb.msg->flow_integral[1]);
         _driver->bodyRate = Vector2f(cb.msg->rate_gyro_integral[0], cb.msg->rate_gyro_integral[1]);
         _driver->integral_time = cb.msg->integration_interval;
@@ -92,8 +76,11 @@ void AP_OpticalFlow_UAVCAN::update()
 // Read the sensor
 void AP_OpticalFlow_UAVCAN::_push_state(void)
 {
-    struct OpticalFlow::OpticalFlow_state state;
     WITH_SEMAPHORE(_sem);
+    if (!new_data) {
+        return;
+    }
+    struct OpticalFlow::OpticalFlow_state state;
     const Vector2f flowScaler = _flowScaler();
 
     float flowScaleFactorX = 1.0f + 0.001f * flowScaler.x;
@@ -108,6 +95,7 @@ void AP_OpticalFlow_UAVCAN::_push_state(void)
     _applyYaw(state.bodyRate);
     // hal.console->printf("DRV: %u %f %f\n", state.surface_quality, flowRate.length(), bodyRate.length());
     _update_frontend(state);
+    new_data = false;
 }
 
 #endif // HAL_WITH_UAVCAN

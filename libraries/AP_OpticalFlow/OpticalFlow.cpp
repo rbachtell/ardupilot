@@ -135,7 +135,7 @@ void OpticalFlow::init(uint32_t log_bit)
         break;
     case OpticalFlowType::UAVCAN:
 #if HAL_WITH_UAVCAN
-        backend = AP_OpticalFlow_UAVCAN::detect(*this);
+        backend = new AP_OpticalFlow_UAVCAN(*this);
 #endif
         break;
     case OpticalFlowType::SITL:
@@ -156,12 +156,6 @@ void OpticalFlow::update(void)
     if (!enabled()) {
         return;
     }
-#if HAL_WITH_UAVCAN
-    if (backend == nullptr && (OpticalFlowType)_type.get() == OpticalFlowType::UAVCAN) {
-        //keep looking until found
-        backend = AP_OpticalFlow_UAVCAN::detect(*this);
-    }
-#endif //HAL_WITH_UAVCAN
     if (backend != nullptr) {
         backend->update();
     }
