@@ -4,7 +4,7 @@
 
 #include <AP_Common/Semaphore.h>
 
-#include "AP_OpticalFlow_UAVCAN.h"
+#include "AP_OpticalFlow_HereFlow.h"
 
 #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 #include <AP_UAVCAN/AP_UAVCAN.h>
@@ -18,13 +18,13 @@ extern const AP_HAL::HAL& hal;
 //UAVCAN Frontend Registry Binder
 UC_REGISTRY_BINDER(MeasurementCb, com::hex::equipment::flow::Measurement);
 
-uint8_t AP_OpticalFlow_UAVCAN::_node_id = 0;
-AP_OpticalFlow_UAVCAN* AP_OpticalFlow_UAVCAN::_driver = nullptr;
-AP_UAVCAN* AP_OpticalFlow_UAVCAN::_ap_uavcan = nullptr;
+uint8_t AP_OpticalFlow_HereFlow::_node_id = 0;
+AP_OpticalFlow_HereFlow* AP_OpticalFlow_HereFlow::_driver = nullptr;
+AP_UAVCAN* AP_OpticalFlow_HereFlow::_ap_uavcan = nullptr;
 /*
   constructor - registers instance at top Flow driver
  */
-AP_OpticalFlow_UAVCAN::AP_OpticalFlow_UAVCAN(OpticalFlow &flow) :
+AP_OpticalFlow_HereFlow::AP_OpticalFlow_HereFlow(OpticalFlow &flow) :
     OpticalFlow_backend(flow)
 {
     if (_driver) {
@@ -33,7 +33,7 @@ AP_OpticalFlow_UAVCAN::AP_OpticalFlow_UAVCAN(OpticalFlow &flow) :
     _driver = this;
 }
 
-void AP_OpticalFlow_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
+void AP_OpticalFlow_HereFlow::subscribe_msgs(AP_UAVCAN* ap_uavcan)
 {
     if (ap_uavcan == nullptr) {
         return;
@@ -51,7 +51,7 @@ void AP_OpticalFlow_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
     }
 }
 
-void AP_OpticalFlow_UAVCAN::handle_measurement(AP_UAVCAN* ap_uavcan, uint8_t node_id, const MeasurementCb &cb)
+void AP_OpticalFlow_HereFlow::handle_measurement(AP_UAVCAN* ap_uavcan, uint8_t node_id, const MeasurementCb &cb)
 {
     if (_driver == nullptr) {
         _ap_uavcan = ap_uavcan;
@@ -68,13 +68,13 @@ void AP_OpticalFlow_UAVCAN::handle_measurement(AP_UAVCAN* ap_uavcan, uint8_t nod
     }
 }
 
-void AP_OpticalFlow_UAVCAN::update()
+void AP_OpticalFlow_HereFlow::update()
 {
     _push_state();
 }
 
 // Read the sensor
-void AP_OpticalFlow_UAVCAN::_push_state(void)
+void AP_OpticalFlow_HereFlow::_push_state(void)
 {
     WITH_SEMAPHORE(_sem);
     if (!new_data) {

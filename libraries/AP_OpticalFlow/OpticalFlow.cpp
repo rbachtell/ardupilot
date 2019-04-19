@@ -6,7 +6,7 @@
 #include "AP_OpticalFlow_PX4Flow.h"
 #include "AP_OpticalFlow_CXOF.h"
 #include "AP_OpticalFlow_MAV.h"
-#include "AP_OpticalFlow_UAVCAN.h"
+#include "AP_OpticalFlow_HereFlow.h"
 #include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
@@ -135,7 +135,7 @@ void OpticalFlow::init(uint32_t log_bit)
         break;
     case OpticalFlowType::UAVCAN:
 #if HAL_WITH_UAVCAN
-        backend = new AP_OpticalFlow_UAVCAN(*this);
+        backend = new AP_OpticalFlow_HereFlow(*this);
 #endif
         break;
     case OpticalFlowType::SITL:

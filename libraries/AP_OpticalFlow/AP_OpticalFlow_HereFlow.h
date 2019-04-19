@@ -7,9 +7,9 @@
 
 class MeasurementCb;
 
-class AP_OpticalFlow_UAVCAN : public OpticalFlow_backend {
+class AP_OpticalFlow_HereFlow : public OpticalFlow_backend {
 public:
-    AP_OpticalFlow_UAVCAN(OpticalFlow &flow);
+    AP_OpticalFlow_HereFlow(OpticalFlow &flow);
 
     void init() override {}
 
@@ -27,7 +27,7 @@ private:
     bool new_data;
     static uint8_t _node_id;
 
-    static AP_OpticalFlow_UAVCAN* _driver;
+    static AP_OpticalFlow_HereFlow* _driver;
     static AP_UAVCAN* _ap_uavcan;
     void _push_state(void);
 
