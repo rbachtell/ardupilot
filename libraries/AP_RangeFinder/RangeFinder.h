@@ -35,6 +35,7 @@ class AP_RangeFinder_Backend;
 class RangeFinder
 {
     friend class AP_RangeFinder_Backend;
+    //UAVCAN drivers are initialised in the Backend, hence list of drivers is needed there.
     friend class AP_RangeFinder_UAVCAN;
 public:
     RangeFinder(AP_SerialManager &_serial_manager);
