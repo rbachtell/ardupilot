@@ -20,8 +20,7 @@ UC_REGISTRY_BINDER(MeasurementCb, uavcan::equipment::range_sensor::Measurement);
   constructor - registers instance at top RangeFinder driver
  */
 AP_RangeFinder_UAVCAN::AP_RangeFinder_UAVCAN(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
-    AP_RangeFinder_Backend(_state, _params),
-    _new_data(false)
+    AP_RangeFinder_Backend(_state, _params)
 {}
 
 void AP_RangeFinder_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
@@ -53,10 +52,12 @@ AP_RangeFinder_UAVCAN* AP_RangeFinder_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_u
             AP::rangefinder()->params[i].address == address) {
             driver = (AP_RangeFinder_UAVCAN*)AP::rangefinder()->drivers[i];
         }
-        if (driver != nullptr &&
-            driver->ap_uavcan == ap_uavcan && 
-            driver->node_id == node_id) {
-            return driver;
+        //Double check if the driver was initialised as UAVCAN Type
+        if (driver != nullptr && (driver->_backend_type == RangeFinder::RangeFinder_TYPE_UAVCAN)) {
+            if (driver->_ap_uavcan == ap_uavcan && 
+                driver->_node_id == node_id) {
+                return driver;
+            }
         }
     }
     
@@ -64,13 +65,16 @@ AP_RangeFinder_UAVCAN* AP_RangeFinder_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_u
         for (uint8_t i = 0; i < RANGEFINDER_MAX_INSTANCES; i++) {
             if (AP::rangefinder()->params[i].type == RangeFinder::RangeFinder_TYPE_UAVCAN &&
                 AP::rangefinder()->params[i].address == address) {
+                if (AP::rangefinder()->drivers[i] != nullptr) {
+                    continue;
+                }
                 AP::rangefinder()->drivers[i] = new AP_RangeFinder_UAVCAN(AP::rangefinder()->state[i], AP::rangefinder()->params[i]);
                 driver = (AP_RangeFinder_UAVCAN*)AP::rangefinder()->drivers[i];
-            }
-            if (driver->ap_uavcan == nullptr) {
-                driver->ap_uavcan = ap_uavcan;
-                driver->node_id = node_id;
-                break;
+                if (driver->_ap_uavcan == nullptr) {
+                    driver->_ap_uavcan = ap_uavcan;
+                    driver->_node_id = node_id;
+                    break;
+                }
             }
         }
     }
