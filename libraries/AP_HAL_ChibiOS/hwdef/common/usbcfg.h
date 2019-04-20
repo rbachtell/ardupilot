@@ -34,15 +34,17 @@ extern "C" {
 
 #if HAL_USE_SERIAL_USB
 extern const USBConfig usbcfg;
-extern SerialUSBConfig serusbcfg1;
+extern const SerialUSBConfig serusbcfg1;
 extern SerialUSBDriver SDU1;
 #ifdef HAVE_DUAL_CDC
 extern SerialUSBDriver SDU2;
-extern SerialUSBConfig serusbcfg2;
+extern const SerialUSBConfig serusbcfg2;
 #endif //HAVE_DUAL_CDC
 #endif
-
+#define USB_DESC_MAX_STRLEN 100
 void setup_usb_strings(void);
+void string_substitute(const char *str, char *str2);
+bool string_contains(const char *haystack, const char *needle);
 
 #if defined(__cplusplus)
 }
