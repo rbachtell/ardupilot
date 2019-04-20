@@ -70,6 +70,10 @@ AP_RangeFinder_UAVCAN* AP_RangeFinder_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_u
                 }
                 AP::rangefinder()->drivers[i] = new AP_RangeFinder_UAVCAN(AP::rangefinder()->state[i], AP::rangefinder()->params[i]);
                 driver = (AP_RangeFinder_UAVCAN*)AP::rangefinder()->drivers[i];
+                if (driver == nullptr) {
+                    break;
+                }
+                AP::rangefinder()->num_instances = MAX(i+1, AP::rangefinder()->num_instances);
                 if (driver->_ap_uavcan == nullptr) {
                     driver->_ap_uavcan = ap_uavcan;
                     driver->_node_id = node_id;
