@@ -54,11 +54,14 @@ void AP_OpticalFlow_HereFlow::subscribe_msgs(AP_UAVCAN* ap_uavcan)
 void AP_OpticalFlow_HereFlow::handle_measurement(AP_UAVCAN* ap_uavcan, uint8_t node_id, const MeasurementCb &cb)
 {
     if (_driver == nullptr) {
-        _ap_uavcan = ap_uavcan;
-        _node_id = node_id;
         return;
     }
-    {
+    if (_ap_uavcan == nullptr) {
+        _ap_uavcan = ap_uavcan;
+        _node_id = node_id;
+    }
+
+    if (_ap_uavcan == ap_uavcan && _node_id == node_id) {
         WITH_SEMAPHORE(_driver->_sem);
         _driver->new_data = true;
         _driver->flowRate = Vector2f(cb.msg->flow_integral[0], cb.msg->flow_integral[1]);
