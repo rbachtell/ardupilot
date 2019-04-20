@@ -31,6 +31,7 @@ private:
     uint16_t _last_reading_ms;
     AP_UAVCAN* _ap_uavcan;
     uint8_t _node_id;
+    bool new_data;
     MAV_DISTANCE_SENSOR _sensor_type;
 };
 #endif //HAL_WITH_UAVCAN

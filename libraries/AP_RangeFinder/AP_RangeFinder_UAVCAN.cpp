@@ -92,11 +92,12 @@ void AP_RangeFinder_UAVCAN::update()
     if ((AP_HAL::millis() - _last_reading_ms) > 200) {
         set_status(RangeFinder::RangeFinder_NoData);
         state.distance_cm = 0;
-    } else if (_status == RangeFinder::RangeFinder_Good) {
+    } else if (_status == RangeFinder::RangeFinder_Good && new_data) {
         state.distance_cm = _distance_cm;
         state.last_reading_ms = _last_reading_ms;
         update_status();
-    } else {
+        new_data = true;
+    } else if (_status != RangeFinder::RangeFinder_Good) {
         set_status(_status);
     }
 }
@@ -114,6 +115,7 @@ void AP_RangeFinder_UAVCAN::handle_measurement(AP_UAVCAN* ap_uavcan, uint8_t nod
             driver->_distance_cm = cb.msg->range*100.0f;
             driver->_last_reading_ms = AP_HAL::millis();
             driver->_status = RangeFinder::RangeFinder_Good;
+            driver->new_data = false;
             break;
         }
         case uavcan::equipment::range_sensor::Measurement::READING_TYPE_TOO_CLOSE:
