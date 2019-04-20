@@ -41,9 +41,13 @@ extern const AP_HAL::HAL& hal;
 #endif
 
 #ifndef HAL_SERIAL6_PROTOCOL
-#define SERIAL6_PROTOCOL SerialProtocol_None
-#define SERIAL6_BAUD AP_SERIALMANAGER_MAVLINK_BAUD/1000
+#define SERIAL6_PROTOCOL SerialProtocol_SLCAN
+#define SERIAL6_BAUD AP_SERIALMANAGER_SLCAN_BAUD/1000
+#else
+#define SERIAL6_PROTOCOL HAL_SERIAL6_PROTOCOL
+#define SERIAL6_BAUD HAL_SERIAL6_BAUD
 #endif
+
 
 const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @Param: 0_BAUD
@@ -354,6 +358,11 @@ void AP_SerialManager::init()
                                          AP_SERIALMANAGER_ROBOTIS_BUFSIZE_TX);
                     state[i].uart->set_unbuffered_writes(true);
                     state[i].uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
+                    break;
+                case SerialProtocol_SLCAN:
+                    state[i].uart->begin(map_baudrate(state[i].baud),
+                                         AP_SERIALMANAGER_SLCAN_BUFSIZE_RX,
+                                         AP_SERIALMANAGER_SLCAN_BUFSIZE_TX);
                     break;
             }
         }
